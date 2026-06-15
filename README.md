@@ -20,7 +20,7 @@ As instruções de entrega e apresentação do challenge estão no final deste R
 
 ### Modelo de Dados:
 
-<details close>
+<details open>
 
 Conforme indicado na documentação da API, a API retorna as informações de uma palavra, tais como etimologia, sinônimos, exemplos de uso, etc. Utilize os campos indicados na documentação dos endpoints para obter os dados necessários.
 
@@ -28,7 +28,7 @@ Conforme indicado na documentação da API, a API retorna as informações de um
 
 ### Back-End:
 
-<details close>
+<details open>
 
 Nessa etapa você deverá construir uma API Restful com as melhores práticas de desenvolvimento.
 
@@ -52,7 +52,7 @@ Nessa etapa você deverá construir uma API Restful com as melhores práticas de
 
 **Obrigatório 2** - Você deverá desenvolver as seguintes rotas com suas requisições e respostas:
 
-<details close>
+<details open>
 
 <summary>[GET] /</summary>
 
@@ -70,7 +70,7 @@ Retornar a mensagem "English Dictionary"
 
 </details>
 
-<details close>
+<details open>
 
 <summary>[POST] /auth/signup</summary>
 
@@ -96,7 +96,7 @@ Retornar a mensagem "English Dictionary"
 
 </details>
 
-<details close>
+<details open>
 
 <summary>[POST] /auth/signin</summary>
 
@@ -120,7 +120,7 @@ Retornar a mensagem "English Dictionary"
 
 </details>
 
-<details close>
+<details open>
 
 <summary>[GET] /entries/en</summary>
 
@@ -152,7 +152,7 @@ Retornar a lista de palavras do dicionário, com paginação e suporte a busca. 
 
 </details>
 
-<details close>
+<details open>
 
 <summary>[GET] /entries/en/:word</summary>
 
@@ -164,7 +164,7 @@ Retornar as informações da palavra especificada e registrar no histórico de a
 
 </details>
 
-<details close>
+<details open>
 
 <summary>[POST] /entries/en/:word/favorite</summary>
 
@@ -176,7 +176,7 @@ Salva a palavra na lista de favoritas (retorno de dados no body é opcional)
 
 </details>
 
-<details close>
+<details open>
 
 <summary>[DELETE] /entries/en/:word/unfavorite</summary>
 
@@ -188,7 +188,7 @@ Remover a palavra da lista de favoritas (retorno de dados no body é opcional)
 
 </details>
 
-<details close>
+<details open>
 
 <summary>[GET] /user/me</summary>
 
@@ -200,7 +200,7 @@ Retornar o perfil do usúario
 
 </details>
 
-<details close>
+<details open>
 
 <summary>[GET] /user/me/history</summary>
 
@@ -252,7 +252,7 @@ Retornar a lista de palavras visitadas
 
 </details>
 
-<details close>
+<details open>
 
 <summary>[GET] /user/me/favorites</summary>
 
@@ -362,7 +362,7 @@ O cache pode ser feito para guardar todo o corpo das respostas ou para guardar o
 
 ### Front-End (Somente vaga Full-Stack):
 
-<details close>
+<details open>
 
 **Objetivo:** Construir uma aplicação Next.js v15 com App Router para consulta e gerenciamento de palavras de um dicionário, utilizando o backend previamente criado.
 
