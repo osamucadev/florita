@@ -4,4 +4,4 @@ WORKDIR /app
 
 COPY package*.json ./
 
-CMD ["npm", "run", "dev"]
+CMD ["tail", "-f", "/dev/null"]
