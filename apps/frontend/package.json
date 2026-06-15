@@ -1,0 +1,7 @@
+{
+  "name": "florita-web",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "echo 'Front em construção...'"
+  }
+}

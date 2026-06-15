@@ -7,9 +7,9 @@ Este documento apresenta o mapeamento completo e o checklist de engenharia para 
 ## 🏗️ 1. Infraestrutura & Banco de Dados (Back-End)
 
 - [ ] **Configuração do Ambiente Docker**
-  - [ ] Criar `Dockerfile` otimizado para o Back-end (Node.js/Express).
-  - [ ] Criar `Dockerfile` otimizado para o Front-end (Next.js 15).
-  - [ ] Estruturar o `docker-compose.yml` integrando: API, Web, PostgreSQL e Redis.
+  - [x] Criar `Dockerfile` otimizado para o Back-end (Node.js/Express).
+  - [x] Criar `Dockerfile` otimizado para o Front-end (Next.js 15).
+  - [x] Estruturar o `docker-compose.yml` integrando: API, Web, PostgreSQL e Redis.
 - [ ] **Modelagem do Banco de Dados (PostgreSQL)**
   - [ ] Tabela `users`: ID, nome, e-mail (chave primária/única), senha criptografada, timestamps.
   - [ ] Tabela `history`: ID, user_id (FK), palavra, adicionado_em (timestamp).

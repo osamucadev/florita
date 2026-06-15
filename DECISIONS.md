@@ -6,19 +6,29 @@ Abaixo, detalho as escolhas de arquitetura e produto que guiaram a minha engenha
 
 ---
 
-### 1. Desapegando do Firebase: Por que decidi ir de Node.js + Redis + Docker?
+### 📝 Nota de Transparência (Adendo Especial)
+
+**Por que a arquitetura foi pivotada para NoSQL:**
+O rascunho inicial do meu planejamento mental considerava o uso do PostgreSQL, que é o banco relacional sugerido como padrão no escopo geral do desafio. No entanto, ao revisar minuciosamente os critérios específicos e a essência técnica da oportunidade (**Desenvolvedor Full-stack com foco em NoSQL**), eu mudei a estratégia de dados imediatamente para o **MongoDB**. 
+
+Eu fiz questão de registrar este adendo de forma transparente porque a adaptabilidade rápida a novos requisitos é a realidade do dia a dia na engenharia de software. Essa mudança acabou se provando a melhor decisão técnica possível, dado que a flexibilidade de documentos do MongoDB resolve de forma muito mais elegante e performática o armazenamento de cargas complexas e aninhadas de uma API de dicionário do que um banco relacional convencional.
+
+---
+
+### 1. Desapegando do Firebase: Por que decidi ir de Node.js + Redis + Docker + MongoDB?
 No meu primeiro momento de concepção do produto, considerei utilizar o **Firebase (Firestore + Cloud Functions + Hosting)**. Afinal, a plataforma do Google oferece infraestrutura pronta com CDN, cache automatizado e deploys em segundos. 
 
-No entanto, eu percebi que uma arquitetura *Serverless/BaaS* (Backend as a Service) mascararia o meu domínio sobre conceitos fundamentais de infraestrutura exigidos pelo desafio. Optei por seguir a stack sugerida com base em três argumentos:
+No entanto, eu percebi que uma arquitetura *Serverless/BaaS* (Backend as a Service) mascararia o meu domínio sobre conceitos fundamentais de infraestrutura e banco de dados exigidos pelo desafio e pelo mercado. Optei por seguir a stack sugerida e focar no ecossistema NoSQL por três argumentos:
 
-* **Controle Granular:** A manipulação nativa de Headers HTTP (`x-cache` e `x-response-time`) exigida no teste se torna muito mais limpa e transparente utilizando uma API própria. Eu escolhi o **Express** ao invés do NestJS por ser uma tecnologia de altíssima performance que eu domino a fundo, permitindo-me demonstrar boas práticas de arquitetura limpa (SOLID) sem me prender a padrões rígidos de um framework que eu não utilizo no dia a dia.
-* **Performance Real de Mercado:** A implementação manual e em camadas do **Redis** para cache de dados garante que a latência caia para níveis próximos a zero (HIT). Isso blinda a aplicação contra limites de taxa (*rate limiting*) da API pública externa.
-* **Portabilidade Absoluta com Docker:** Eu orquestrei toda a infraestrutura (PostgreSQL, Redis, API Express e Web Next.js) em um ambiente `docker-compose`. Dessa forma, o avaliador consegue rodar o ecossistema inteiro localmente com apenas um comando, sem depender de chaves de provedores de nuvem ou configurações complexas na máquina.
+* **Controle Granular e Performance:** A manipulação nativa de Headers HTTP (`x-cache` e `x-response-time`) exigida no edital se torna muito mais limpa e transparente utilizando uma API própria[cite: 1]. Eu escolhi o **Express** ao invés do NestJS por ser uma tecnologia de altíssima performance que eu domino a fundo, permitindo-me demonstrar boas práticas de arquitetura limpa (SOLID) sem me prender a padrões rígidos de um framework que eu não utilizo no dia a dia.
+* **Persistência de Dados Orientada a Documentos (NoSQL):** Em total alinhamento com os requisitos arquiteturais de bancos de dados NoSQL, optei por utilizar o **MongoDB** via Mongoose. Como os retornos da API do dicionário possuem estruturas aninhadas complexas (como múltiplos arrays de fonéticas, sinônimos e definições), o modelo NoSQL evita a complexidade e a perda de performance de junções relacionais (JOINs) desnecessárias, permitindo consultas ultra velozes, indexação eficiente para paginação por cursor e um mapeamento totalmente natural de documentos JSON.
+* **Performance Real com Redis:** A implementação manual e em camadas do **Redis** para cache de dados garante que a latência caie para níveis próximos a zero (HIT)[cite: 1]. Isso blinda a aplicação contra limites de taxa (*rate limiting*) da API pública externa.
+* **Portabilidade Absoluta com Docker:** Eu orquestrei toda a infraestrutura (MongoDB, Redis, API Express e Web Next.js) em um ambiente `docker-compose`[cite: 1]. Dessa forma, o avaliador consegue rodar o ecossistema inteiro localmente com apenas um comando, sem depender de chaves de provedores de nuvem ou configurações complexas na máquina[cite: 1].
 
 ### 2. Fonte de Dados Inteligente: Garantindo 100% de Confiabilidade
 As instruções originais sugeriam o uso de uma lista genérica do repositório `dwyl/english-words`. Em uma análise técnica minuciosa, eu decidi mudar a estratégia e extrair o arquivo `english.txt` diretamente do repositório oficial da **Free Dictionary API**.
 
-* **Por que fiz essa troca?** Utilizar a lista oficial garante que 100% das palavras cadastradas localmente no meu banco de dados de busca (`GET /entries/en`) possuam definições válidas na API externa. Isso elimina falsos positivos na busca interna e melhora drasticamente a experiência do usuário (UX), evitando cenários frustrantes de "No Definitions Found".
+* **Por que fiz essa troca?** Utilizar a lista oficial garante que 100% das palavras cadastradas localmente no meu banco de dados NoSQL de busca (`GET /entries/en`) possuam definições válidas na API externa[cite: 1]. Isso elimina falsos positivos na busca interna e melhora drasticamente a experiência do usuário (UX), evitando cenários frustrantes de "No Definitions Found".
 
 ### 3. Regra de Negócio Precisa para o Histórico (UX)
 Eu defini uma regra estrita para a alimentação do histórico do usuário: o termo consultado **só será registrado no histórico quando o usuário efetivamente clicar na palavra** (seja nas sugestões da busca ou na listagem geral) para abrir o modal de definição. 
