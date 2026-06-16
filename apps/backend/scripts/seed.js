@@ -55,13 +55,24 @@ async function runSeed() {
 
       // Quando atingimos o tamanho do lote, disparamos a gravação em massa
       if (currentBatch.length === BATCH_SIZE) {
-        // ordered: false garante que se houver uma palavra duplicada, ele ignora o erro e continua o lote
-        await Dictionary.bulkWrite(currentBatch, { ordered: false }).catch(
-          () => {},
-        );
-        totalProcessed += currentBatch.length;
+        try {
+          const result = await Dictionary.bulkWrite(currentBatch, {
+            ordered: false,
+          });
+          // Soma apenas o que foi REALMENTE inserido de forma inédita no banco
+          totalProcessed += result.nInserted || 0;
+        } catch (error) {
+          // Se o erro for apenas de duplicidade (código 11000), somamos o que passou
+          if (error.code === 11000 && error.result) {
+            totalProcessed += error.result.nInserted || 0;
+          } else {
+            // Se for outro erro (ex: banco caiu), aí sim nós estouramos a falha
+            throw error;
+          }
+        }
+
         console.log(
-          `📦 Lote processado: ${totalProcessed} palavras persistidas...`,
+          `📦 Palavras novas persistidas até agora: ${totalProcessed}...`,
         );
         currentBatch = []; // Limpa o lote atual
       }
@@ -69,10 +80,26 @@ async function runSeed() {
 
     // Injeta o que sobrou no último lote parcial
     if (currentBatch.length > 0) {
-      await Dictionary.bulkWrite(currentBatch, { ordered: false }).catch(
-        () => {},
+      try {
+        const result = await Dictionary.bulkWrite(currentBatch, {
+          ordered: false,
+        });
+        // Soma apenas o que foi REALMENTE inserido de forma inédita no banco
+        totalProcessed += result.nInserted || 0;
+      } catch (error) {
+        // Se o erro for apenas de duplicidade (código 11000), somamos o que passou
+        if (error.code === 11000 && error.result) {
+          totalProcessed += error.result.nInserted || 0;
+        } else {
+          // Se for outro erro (ex: banco caiu), aí sim nós estouramos a falha
+          throw error;
+        }
+      }
+
+      console.log(
+        `📦 Palavras novas persistidas até agora: ${totalProcessed}...`,
       );
-      totalProcessed += currentBatch.length;
+      currentBatch = []; // Limpa o lote atual
     }
 
     console.log(

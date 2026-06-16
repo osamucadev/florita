@@ -11,14 +11,15 @@ const HistorySchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      lowercase: true,
     },
   },
   {
-    timestamps: { createdAt: true, updatedAt: false }, // Só precisamos saber quando foi criado
+    timestamps: { createdAt: true, updatedAt: false },
   },
 );
 
-// Índice composto: melhora a performance ao buscar o histórico de um usuário específico
+// Índice composto: Busca ultra veloz do histórico por usuário ordenado pelo mais recente
 HistorySchema.index({ userId: 1, createdAt: -1 });
 
 module.exports = mongoose.model("History", HistorySchema);

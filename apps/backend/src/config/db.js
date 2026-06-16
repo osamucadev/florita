@@ -27,4 +27,18 @@ mongoose.connection.on("error", (err) => {
   console.error(`❌ Erro interno no Mongoose: ${err.message}`);
 });
 
+// 🔌 GRACEFUL SHUTDOWN: Intercepta o encerramento do container e fecha as conexões limpas
+const gracefulShutdown = async (signal) => {
+  console.log(
+    `\n🛑 Sinal ${signal} recebido. Encerrando conexões da Florita API de forma limpa...`,
+  );
+  await mongoose.connection.close();
+  console.log("🔌 Conexão com o MongoDB fechada com sucesso. Tchau!");
+  process.exit(0);
+};
+
+// Captura o Ctrl+C no terminal local (SIGINT) e o comando de parada do Docker (SIGTERM)
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+
 module.exports = connectDB;
