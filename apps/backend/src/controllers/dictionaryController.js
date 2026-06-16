@@ -14,10 +14,11 @@ const getEntries = async (req, res) => {
 
   try {
     const { search, limit = 20, next, previous } = req.query;
-    const parsedLimit = parseInt(limit, 10);
 
-    let query = {};
-    let sortOrder = { word: 1 }; // Padrão alfabético ascendente
+    // Sanitiza o limite: evita NaN e impede abuso com valores absurdos (teto de 100)
+    const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+
+    const sortOrder = { word: 1 }; // Padrão alfabético ascendente
 
     // Cria uma chave de cache dinâmica baseada nos parâmetros da query string
     const cacheKey = `entries:search=${search || ""}:limit=${parsedLimit}:next=${next || ""}:prev=${previous || ""}`;
@@ -40,44 +41,53 @@ const getEntries = async (req, res) => {
       return res.status(200).json(cachedData);
     }
 
-    // 1. Aplica busca textual se o parâmetro 'search' existir
-    if (search) {
-      query.$text = { $search: search.trim().toLowerCase() };
+    // ──────────────────────────────────────────────────────────────
+    // Busca por PREFIXO usando range no índice { word: 1 }.
+    // Ex.: search="fire" → { word: { $gte: "fire", $lt: "fire\uffff" } }
+    // retornando "fire", "firefly", "fireplace"...
+    // (\uffff funciona como limite superior pois nenhuma palavra do
+    //  dicionário contém caracteres maiores que ele).
+    // Operar sobre 'word' (igual ao cursor) elimina o $text e o conflito
+    // de "dois $text na mesma query" que estourava 400 ao paginar buscas.
+    // ──────────────────────────────────────────────────────────────
+    const term = search ? search.trim().toLowerCase() : null;
+
+    // Filtro base: somente o recorte da busca (sem cursor). Usado p/ o total.
+    const baseWordFilter = {};
+    if (term) {
+      baseWordFilter.$gte = term;
+      baseWordFilter.$lt = term + "\uffff";
     }
+    const baseQuery = Object.keys(baseWordFilter).length
+      ? { word: baseWordFilter }
+      : {};
 
-    // Contagem total de documentos baseados no filtro de busca atual
-    const totalDocs = await Dictionary.countDocuments(query);
+    // Total de documentos que casam com a busca (independente da página atual)
+    const totalDocs = await Dictionary.countDocuments(baseQuery);
 
-    // 2. Lógica de Cursor Reverso (Voltar Página - Previous)
+    // Filtro da página: parte do filtro base e aplica o cursor por cima.
+    const pageWordFilter = { ...baseWordFilter };
+
     if (previous) {
+      // Cursor reverso: pega os termos imediatamente anteriores ao cursor.
       const decodedPrevious = Buffer.from(previous, "base64").toString("utf-8");
-      if (search) {
-        query.$and = [
-          { $text: { $search: search.trim().toLowerCase() } },
-          { word: { $lt: decodedPrevious } },
-        ];
-      } else {
-        query.word = { $lt: decodedPrevious };
-      }
-      sortOrder.word = -1; // Inverte para pegar os elementos imediatamente anteriores
-    }
-    // 3. Lógica de Cursor Direto (Avançar Página - Next)
-    else if (next) {
+      pageWordFilter.$lt = decodedPrevious; // mais restritivo que o teto do prefixo
+      sortOrder.word = -1; // Inverte para "andar para trás"
+    } else if (next) {
+      // Cursor direto: pega os termos imediatamente posteriores ao cursor.
       const decodedNext = Buffer.from(next, "base64").toString("utf-8");
-      if (search) {
-        query.$and = [
-          { $text: { $search: search.trim().toLowerCase() } },
-          { word: { $gt: decodedNext } },
-        ];
-      } else {
-        query.word = { $gt: decodedNext };
-      }
+      delete pageWordFilter.$gte; // o $gt do cursor substitui o piso do prefixo
+      pageWordFilter.$gt = decodedNext;
     }
+
+    const query = Object.keys(pageWordFilter).length
+      ? { word: pageWordFilter }
+      : {};
 
     // Executa a busca no MongoDB
     let words = await Dictionary.find(query).sort(sortOrder).limit(parsedLimit);
 
-    // Se usamos o cursor previous, os resultados vêm invertidos do banco; reordenamos alfabeticamente
+    // Se usamos o cursor previous, os resultados vêm invertidos; reordenamos
     if (previous) {
       words = words.reverse();
     }
@@ -89,35 +99,25 @@ const getEntries = async (req, res) => {
     let hasNext = false;
     let hasPrev = false;
 
+    // Existe alguma palavra DEPOIS da última (dentro do recorte da busca)?
     if (lastWord) {
-      const nextCheckQuery = { ...query };
-      if (search) {
-        nextCheckQuery.$and = [
-          { $text: { $search: search.trim().toLowerCase() } },
-          { word: { $gt: lastWord } },
-        ];
-      } else {
-        nextCheckQuery.word = { $gt: lastWord };
-      }
-      const nextCheck = await Dictionary.findOne(nextCheckQuery).sort({
-        word: 1,
-      });
+      const nextCheck = await Dictionary.findOne({
+        word: {
+          $gt: lastWord,
+          ...(term ? { $lt: term + "\uffff" } : {}),
+        },
+      }).sort({ word: 1 });
       hasNext = !!nextCheck;
     }
 
+    // Existe alguma palavra ANTES da primeira (dentro do recorte da busca)?
     if (firstWord) {
-      const prevCheckQuery = { ...query };
-      if (search) {
-        prevCheckQuery.$and = [
-          { $text: { $search: search.trim().toLowerCase() } },
-          { word: { $lt: firstWord } },
-        ];
-      } else {
-        prevCheckQuery.word = { $lt: firstWord };
-      }
-      const prevCheck = await Dictionary.findOne(prevCheckQuery).sort({
-        word: -1,
-      });
+      const prevCheck = await Dictionary.findOne({
+        word: {
+          $lt: firstWord,
+          ...(term ? { $gte: term } : {}),
+        },
+      }).sort({ word: -1 });
       hasPrev = !!prevCheck;
     }
 
@@ -135,7 +135,7 @@ const getEntries = async (req, res) => {
       hasPrev,
     };
 
-    // Salva o payload da listagem no Redis com TTL curto de 5 minutos para otimizar navegações repetidas
+    // Salva o payload da listagem no Redis com TTL curto de 5 minutos
     if (redisClient.isOpen && words.length > 0) {
       await redisClient.set(cacheKey, JSON.stringify(responsePayload), {
         EX: 300,
@@ -152,7 +152,7 @@ const getEntries = async (req, res) => {
     const responseTime = Date.now() - startTime;
     res.setHeader("x-response-time", `${responseTime}ms`);
     return res
-      .status(400)
+      .status(500)
       .json({ message: "Erro ao processar a paginação dos termos." });
   }
 };
@@ -189,8 +189,12 @@ const getWordDetails = async (req, res) => {
 
     if (!wordData) {
       try {
-        const externalApiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${normalizedWord}`;
-        const response = await axios.get(externalApiUrl);
+        // encodeURIComponent protege contra palavras com caracteres especiais
+        const externalApiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(
+          normalizedWord,
+        )}`;
+        // timeout evita requisições penduradas caso a API externa trave
+        const response = await axios.get(externalApiUrl, { timeout: 5000 });
 
         wordData = response.data;
 
@@ -212,7 +216,7 @@ const getWordDetails = async (req, res) => {
       }
     }
 
-    // Salva de forma assíncrona e isolada no Histórico NoSQL
+    // Salva de forma isolada no Histórico NoSQL (falha aqui não impede a resposta)
     try {
       await History.create({
         userId,
@@ -233,8 +237,9 @@ const getWordDetails = async (req, res) => {
     console.error(`❌ Erro no fluxo de detalhes da palavra: ${error.message}`);
     const responseTime = Date.now() - startTime;
     res.setHeader("x-response-time", `${responseTime}ms`);
+    // Falha na API externa / Redis é problema de servidor, não do cliente
     return res
-      .status(400)
+      .status(500)
       .json({ message: "Erro ao processar a busca de detalhes do termo." });
   }
 };
@@ -256,28 +261,29 @@ const favoriteWord = async (req, res) => {
   const normalizedWord = word.trim().toLowerCase();
 
   try {
-    // Usamos um try/catch focado na inserção para capturar o erro de duplicidade do índice composto único
+    // try/catch focado na inserção para capturar a duplicidade do índice único
     try {
       await Favorite.create({
         userId,
         word: normalizedWord,
       });
     } catch (dbError) {
-      // Código 11000 significa que o índice único barrou (o usuário já tinha favoritado)
+      // Código 11000 = índice único barrou (o usuário já tinha favoritado)
       if (dbError.code === 11000) {
+        // 409 Conflict descreve melhor um conflito de estado que 400.
         return res
-          .status(400)
+          .status(409)
           .json({ message: "Esta palavra já está na sua lista de favoritos." });
       }
       throw dbError;
     }
 
-    // O edital exige retorno 204 (No Content) para operações de escrita/sucesso que não retornam corpo
+    // 204 (No Content) para escrita bem-sucedida sem corpo de resposta
     return res.status(204).send();
   } catch (error) {
     console.error(`❌ Erro ao favoritar palavra: ${error.message}`);
     return res
-      .status(400)
+      .status(500)
       .json({ message: "Erro ao processar a ação de favoritar." });
   }
 };
@@ -304,19 +310,19 @@ const unfavoriteWord = async (req, res) => {
       word: normalizedWord,
     });
 
-    // Se nenhum documento foi deletado, significa que a palavra não estava favoritada
+    // Nenhum documento deletado = a palavra não estava favoritada
     if (result.deletedCount === 0) {
       return res.status(404).json({
         message: "Esta palavra não foi encontrada na sua lista de favoritos.",
       });
     }
 
-    // Retorno 204 (No Content) conforme as restrições estritas do edital
+    // 204 (No Content) conforme as restrições do edital
     return res.status(204).send();
   } catch (error) {
     console.error(`❌ Erro ao desfavoritar palavra: ${error.message}`);
     return res
-      .status(400)
+      .status(500)
       .json({ message: "Erro ao processar a ação de desfavoritar." });
   }
 };

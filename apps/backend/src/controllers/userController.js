@@ -1,8 +1,40 @@
+const mongoose = require("mongoose");
+const User = require("../models/User");
 const History = require("../models/History");
 const Favorite = require("../models/Favorite");
 
 /**
- * 📜 1. Listagem cronológica do histórico agrupado por períodos
+ * 👤 1. Perfil do usuário autenticado
+ * Endpoint: GET /user/me
+ */
+const getMe = async (req, res) => {
+  const userId = req.userId; // Injetado pelo authMiddleware
+
+  try {
+    // .select("-password") garante que o hash da senha NUNCA saia na resposta
+    const user = await User.findById(userId).select("-password");
+
+    // Token válido mas usuário inexistente (ex.: conta removida após o login)
+    if (!user) {
+      return res.status(404).json({ message: "Usuário não encontrado." });
+    }
+
+    return res.status(200).json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      createdAt: user.createdAt,
+    });
+  } catch (error) {
+    console.error(`❌ Erro ao buscar perfil do usuário: ${error.message}`);
+    return res
+      .status(500)
+      .json({ message: "Erro ao carregar o perfil do usuário." });
+  }
+};
+
+/**
+ * 📜 2. Listagem cronológica do histórico agrupado por períodos
  * Endpoint: GET /user/me/history
  */
 const getMyHistory = async (req, res) => {
@@ -18,7 +50,9 @@ const getMyHistory = async (req, res) => {
     // Pipeline de agregação para agrupar os logs direto na memória do banco NoSQL
     const historyGrouped = await History.aggregate([
       {
-        $match: { userId: new require("mongoose").Types.ObjectId(userId) },
+        // Em agregação o Mongo NÃO faz cast automático da string -> ObjectId,
+        // então a conversão explícita é obrigatória aqui.
+        $match: { userId: new mongoose.Types.ObjectId(userId) },
       },
       {
         $sort: { createdAt: -1 }, // Aproveita o índice composto { userId: 1, createdAt: -1 }
@@ -56,13 +90,13 @@ const getMyHistory = async (req, res) => {
   } catch (error) {
     console.error(`❌ Erro ao buscar histórico do usuário: ${error.message}`);
     return res
-      .status(400)
+      .status(500)
       .json({ message: "Erro ao carregar o histórico de navegação." });
   }
 };
 
 /**
- * ⭐ 2. Listagem geral de todas as palavras favoritadas pelo usuário
+ * ⭐ 3. Listagem geral de todas as palavras favoritadas pelo usuário
  * Endpoint: GET /user/me/favorites
  */
 const getMyFavorites = async (req, res) => {
@@ -83,12 +117,13 @@ const getMyFavorites = async (req, res) => {
   } catch (error) {
     console.error(`❌ Erro ao buscar favoritos do usuário: ${error.message}`);
     return res
-      .status(400)
+      .status(500)
       .json({ message: "Erro ao carregar a lista de palavras favoritas." });
   }
 };
 
 module.exports = {
+  getMe,
   getMyHistory,
   getMyFavorites,
 };

@@ -20,7 +20,7 @@ const swaggerOptions = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Florita API — Dicionário Técnico",
+      title: "Florita API - Dicionário Técnico",
       version: "1.0.0",
       description:
         "API RESTful para consulta de termos em inglês e gerenciamento de perfis da Flora Energia.",

@@ -1,13 +1,24 @@
 const jwt = require("jsonwebtoken");
 
+// Lê o segredo UMA vez, no carregamento do módulo.
+// Sem fallback: se a env não existir, o app falha no boot em vez de
+// subir assinando tokens com uma chave conhecida (publicada no repo).
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error(
+    "JWT_SECRET não definido nas variáveis de ambiente. Configure-o antes de iniciar a API.",
+  );
+}
+
 /**
  * Middleware de Autenticação JWT
  * Garante que apenas usuários autenticados acessem rotas privadas.
  */
-const authMiddleware = async (req, res, next) => {
+const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
-  // Se o cabeçalho não existir, barra o acesso imediatamente no padrão (message)
+  // Se o cabeçalho não existir, barra o acesso imediatamente
   if (!authHeader) {
     return res
       .status(401)
@@ -25,7 +36,7 @@ const authMiddleware = async (req, res, next) => {
 
   const [scheme, token] = parts;
 
-  // Valida se o esquema do token começa com a palavra "Bearer"
+  // Valida se o esquema do token é "Bearer" (case-insensitive)
   if (!/^Bearer$/i.test(scheme)) {
     return res
       .status(401)
@@ -33,21 +44,17 @@ const authMiddleware = async (req, res, next) => {
   }
 
   try {
-    // Validação Real do JWT usando a assinatura do sistema
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "fallback_secret_flora_2026",
-    );
+    // Validação real do JWT usando a assinatura do sistema
+    const decoded = jwt.verify(token, JWT_SECRET);
 
-    // Injeta o ID e o Nome extraídos do payload diretamente no objeto da requisição (req)
-    // Isso deixa esses dados disponíveis para qualquer Controller que venha depois do middleware
+    // Injeta os dados extraídos do payload no objeto da requisição (req),
+    // disponibilizando-os para qualquer Controller posterior.
     req.userId = decoded.id;
     req.userName = decoded.name;
 
-    // Permite que a requisição siga para o próximo interceptor ou Controller
     return next();
   } catch (error) {
-    // Captura token expirado (as regras de 5 minutos) ou assinaturas violadas
+    // Captura token expirado ou assinatura violada
     console.error(`⚠️ Falha na verificação do JWT: ${error.message}`);
     return res
       .status(401)

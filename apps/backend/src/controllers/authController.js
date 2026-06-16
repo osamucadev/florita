@@ -1,6 +1,25 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
+// Segredo lido uma vez, sem fallback: se a env não existir, o app falha no
+// boot em vez de assinar tokens com uma chave conhecida. (Igual ao middleware.)
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error(
+    "JWT_SECRET não definido nas variáveis de ambiente. Configure-o antes de iniciar a API.",
+  );
+}
+
+// Expiração configurável via ambiente (a env JWT_EXPIRATION já existe no compose).
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || "1h";
+
+// Centraliza a emissão do token para signup e signin permanecerem idênticos.
+const generateToken = (user) =>
+  jwt.sign({ id: user._id, name: user.name }, JWT_SECRET, {
+    expiresIn: JWT_EXPIRATION,
+  });
+
 /**
  * Registro de novos usuários (Sign Up)
  * Endpoint: POST /auth/signup
@@ -9,17 +28,17 @@ const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Validação simples dos campos obrigatórios conforme formato exigido (message)
+    // Validação simples dos campos obrigatórios
     if (!name || !email || !password) {
       return res.status(400).json({
         message: "Por favor, preencha todos os campos (nome, email e senha).",
       });
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+
     // Verifica se já existe um usuário cadastrado com esse e-mail
-    const userExists = await User.findOne({
-      email: email.trim().toLowerCase(),
-    });
+    const userExists = await User.findOne({ email: normalizedEmail });
 
     if (userExists) {
       return res.status(400).json({
@@ -27,21 +46,15 @@ const signup = async (req, res) => {
       });
     }
 
-    // Cria o usuário — O hook pre-save do User.js cuida da criptografia de forma oculta
+    // Cria o usuário — o hook pre-save do User.js cuida da criptografia da senha
     const newUser = await User.create({
       name: name.trim(),
-      email: email.trim().toLowerCase(),
-      password: password,
+      email: normalizedEmail,
+      password,
     });
 
-    // Gerar Token JWT real com expiração de 5 minutos para auditoria do teste
-    const token = jwt.sign(
-      { id: newUser._id, name: newUser.name },
-      process.env.JWT_SECRET || "fallback_secret_flora_2026",
-      { expiresIn: "5m" },
-    );
+    const token = generateToken(newUser);
 
-    // Retorno de dados no formato EXATO exigido pelo edital (Status 200)
     return res.status(200).json({
       id: newUser._id,
       name: newUser.name,
@@ -49,7 +62,20 @@ const signup = async (req, res) => {
     });
   } catch (error) {
     console.error(`Erro no fluxo de cadastro: ${error.message}`);
-    return res.status(400).json({
+
+    // Índice único barrou um e-mail duplicado (corrida entre o findOne e o create)
+    if (error.code === 11000) {
+      return res.status(400).json({
+        message: "Este e-mail já está em uso por outro usuário.",
+      });
+    }
+
+    // Falha de validação do schema (ex.: formato de e-mail inválido) é erro do cliente
+    if (error.name === "ValidationError") {
+      return res.status(400).json({ message: error.message });
+    }
+
+    return res.status(500).json({
       message: "Erro ao processar a requisição de cadastro.",
     });
   }
@@ -69,7 +95,7 @@ const signin = async (req, res) => {
       });
     }
 
-    // Busca o usuário no banco NoSQL usando o índice de e-mail
+    // Busca o usuário no banco usando o índice de e-mail
     const user = await User.findOne({ email: email.trim().toLowerCase() });
 
     if (!user) {
@@ -87,14 +113,8 @@ const signin = async (req, res) => {
       });
     }
 
-    // Gerar Token JWT idêntico ao do cadastro
-    const token = jwt.sign(
-      { id: user._id, name: user.name },
-      process.env.JWT_SECRET || "fallback_secret_flora_2026",
-      { expiresIn: "5m" },
-    );
+    const token = generateToken(user);
 
-    // Retorno de dados no formato EXATO exigido pelo edital (Status 200)
     return res.status(200).json({
       id: user._id,
       name: user.name,
@@ -102,7 +122,7 @@ const signin = async (req, res) => {
     });
   } catch (error) {
     console.error(`Erro no fluxo de login: ${error.message}`);
-    return res.status(400).json({
+    return res.status(500).json({
       message: "Erro ao processar a requisição de autenticação.",
     });
   }
