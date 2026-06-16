@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -8,15 +8,21 @@ import { SessionGuard } from "@/components/SessionGuard";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, hydrate } = useAuthStore();
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    hydrate();
+    setTimeout(() => setIsHydrated(true), 0);
+  }, [hydrate]);
+
+  useEffect(() => {
+    if (isHydrated && !isAuthenticated) {
       router.replace("/");
     }
-  }, [isAuthenticated, router]);
+  }, [isHydrated, isAuthenticated, router]);
 
-  if (!isAuthenticated || !user) {
+  if (!isHydrated || !isAuthenticated || !user) {
     return null;
   }
 
