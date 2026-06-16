@@ -2,20 +2,11 @@ const express = require("express");
 const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
-require("dotenv").config();
-
-const connectDB = require("./config/db");
-const { connectRedis } = require("./config/redis");
 const routes = require("./routes");
 
 const app = express();
 const PORT = process.env.PORT || 3333;
 
-// Inicializa a conexão com o banco de dados NoSQL e com o Redis
-connectDB();
-connectRedis();
-
-// Configurações Globais do OpenAPI 3.0 (Swagger)
 const swaggerOptions = {
   definition: {
     openapi: "3.0.0",
@@ -43,25 +34,14 @@ const swaggerOptions = {
       },
     },
   },
-  // O swagger-jsdoc vai varrer todos os arquivos .js dentro da pasta de rotas procurando as anotações @openapi
   apis: ["./src/routes/*.js"],
 };
 
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
 
-// Middlewares Globais
 app.use(cors());
 app.use(express.json());
-
-// Rota da Documentação Interativa da API
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-
-// Centralizador de Rotas da Aplicação
 app.use(routes);
 
-app.listen(PORT, () => {
-  console.log(`🌸 Florita API rodando com sucesso na porta ${PORT}!`);
-  console.log(
-    `📑 Documentação Swagger disponível em http://localhost:${PORT}/api-docs`,
-  );
-});
+module.exports = app;
