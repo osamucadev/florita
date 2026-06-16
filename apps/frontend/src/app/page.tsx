@@ -71,8 +71,8 @@ function LoginForm() {
             </span>
           </p>
           <p className="text-sm italic leading-relaxed text-[#625678]">
-            S.m. Ecossistema inteligente de tradução, termos e dados técnicos
-            moldados para a infraestrutura de geração renovável da Flora.
+            S.f. Pesquise, salve e revise termos técnicos em inglês. Seu
+            histórico de consultas sempre à mão.
           </p>
         </div>
       </div>
