@@ -48,53 +48,58 @@ router.get("/", userController.getMe);
  * /user/me/history:
  *   get:
  *     summary: Recupera o histórico de consultas do usuário logado
- *     description: Retorna a lista de termos pesquisados, processada e agrupada cronologicamente em blocos de tempo ("Hoje", "Ontem" e "Anteriores") direto pelo banco de dados.
+ *     description: Retorna a lista paginada de termos visualizados (mais recentes primeiro), no formato { word, added }. O agrupamento por período é responsabilidade do front-end.
  *     tags:
  *       - Perfil do Usuário
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Número da página (começa em 1).
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Quantidade de registros por página (máximo 100).
  *     responses:
  *       200:
- *         description: Histórico cronológico retornado com sucesso.
+ *         description: Histórico retornado com sucesso.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
  *                 results:
- *                   type: object
- *                   properties:
- *                     today:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           word:
- *                             type: string
- *                             example: "firefly"
- *                           added:
- *                             type: string
- *                             format: date-time
- *                     yesterday:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           word:
- *                             type: string
- *                           added:
- *                             type: string
- *                             format: date-time
- *                     older:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           word:
- *                             type: string
- *                           added:
- *                             type: string
- *                             format: date-time
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       word:
+ *                         type: string
+ *                         example: "firefly"
+ *                       added:
+ *                         type: string
+ *                         format: date-time
+ *                 totalDocs:
+ *                   type: integer
+ *                   example: 20
+ *                 page:
+ *                   type: integer
+ *                   example: 2
+ *                 totalPages:
+ *                   type: integer
+ *                   example: 5
+ *                 hasNext:
+ *                   type: boolean
+ *                   example: true
+ *                 hasPrev:
+ *                   type: boolean
+ *                   example: true
  *       401:
  *         description: Não autorizado. Token ausente ou inválido.
  */
@@ -105,14 +110,27 @@ router.get("/history", userController.getMyHistory);
  * /user/me/favorites:
  *   get:
  *     summary: Lista todas as palavras favoritadas pelo usuário logado
- *     description: Retorna os termos que o usuário favoritou ordenados do mais recente para o mais antigo.
+ *     description: Retorna a lista paginada de termos favoritados (mais recentes primeiro), no formato { word, added }.
  *     tags:
  *       - Perfil do Usuário
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Número da página (começa em 1).
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Quantidade de registros por página (máximo 100).
  *     responses:
  *       200:
- *         description: Lista de favoritos carregada com sucesso.
+ *         description: Lista de favoritos retornada com sucesso.
  *         content:
  *           application/json:
  *             schema:
@@ -129,6 +147,21 @@ router.get("/history", userController.getMyHistory);
  *                       added:
  *                         type: string
  *                         format: date-time
+ *                 totalDocs:
+ *                   type: integer
+ *                   example: 20
+ *                 page:
+ *                   type: integer
+ *                   example: 2
+ *                 totalPages:
+ *                   type: integer
+ *                   example: 5
+ *                 hasNext:
+ *                   type: boolean
+ *                   example: true
+ *                 hasPrev:
+ *                   type: boolean
+ *                   example: true
  *       401:
  *         description: Não autorizado. Token ausente ou inválido.
  */

@@ -270,9 +270,9 @@ const favoriteWord = async (req, res) => {
     } catch (dbError) {
       // Código 11000 = índice único barrou (o usuário já tinha favoritado)
       if (dbError.code === 11000) {
-        // 409 Conflict descreve melhor um conflito de estado que 400.
+        // 400 Conflict descreve melhor um conflito de estado que 400.
         return res
-          .status(409)
+          .status(400)
           .json({ message: "Esta palavra já está na sua lista de favoritos." });
       }
       throw dbError;

@@ -140,7 +140,7 @@ router.get("/entries/en/:word", dictionaryController.getWordDetails);
  *       204:
  *         description: Palavra favoritada com sucesso. Sem corpo de retorno.
  *       400:
- *         description: Palavra já favoritada ou erro de requisição.
+ *         description: A palavra já está na lista de favoritos do usuário.
  *         content:
  *           application/json:
  *             schema:
@@ -151,6 +151,16 @@ router.get("/entries/en/:word", dictionaryController.getWordDetails);
  *                   example: "Esta palavra já está na sua lista de favoritos."
  *       401:
  *         description: Token ausente ou inválido.
+ *       500:
+ *         description: Erro interno ao processar a ação de favoritar.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Erro ao processar a ação de favoritar."
  */
 router.post("/entries/en/:word/favorite", dictionaryController.favoriteWord);
 

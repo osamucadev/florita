@@ -1,7 +1,13 @@
-const mongoose = require("mongoose");
 const User = require("../models/User");
 const History = require("../models/History");
 const Favorite = require("../models/Favorite");
+
+// Sanitiza page/limit vindos da query string (evita NaN, valores <1 e teto de 100)
+const parsePagination = (query) => {
+  const page = Math.max(parseInt(query.page, 10) || 1, 1);
+  const limit = Math.min(Math.max(parseInt(query.limit, 10) || 20, 1), 100);
+  return { page, limit };
+};
 
 /**
  * 👤 1. Perfil do usuário autenticado
@@ -34,58 +40,33 @@ const getMe = async (req, res) => {
 };
 
 /**
- * 📜 2. Listagem cronológica do histórico agrupado por períodos
+ * 📜 2. Histórico de palavras visualizadas (lista paginada, mais recentes primeiro)
  * Endpoint: GET /user/me/history
+ * Retorna o array plano { word, added } conforme o contrato do edital.
+ * O agrupamento por período (Hoje/Ontem/...) fica a cargo do front-end.
  */
 const getMyHistory = async (req, res) => {
-  const userId = req.userId; // Recuperado de forma segura pelo authMiddleware
+  const userId = req.userId;
 
   try {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    const { page, limit } = parsePagination(req.query);
 
-    const yesterdayStart = new Date(todayStart);
-    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    const totalDocs = await History.countDocuments({ userId });
+    const totalPages = Math.ceil(totalDocs / limit) || 0;
 
-    // Pipeline de agregação para agrupar os logs direto na memória do banco NoSQL
-    const historyGrouped = await History.aggregate([
-      {
-        // Em agregação o Mongo NÃO faz cast automático da string -> ObjectId,
-        // então a conversão explícita é obrigatória aqui.
-        $match: { userId: new mongoose.Types.ObjectId(userId) },
-      },
-      {
-        $sort: { createdAt: -1 }, // Aproveita o índice composto { userId: 1, createdAt: -1 }
-      },
-      {
-        $facet: {
-          Hoje: [
-            { $match: { createdAt: { $gte: todayStart } } },
-            { $project: { _id: 0, word: 1, added: "$createdAt" } },
-          ],
-          Ontem: [
-            {
-              $match: { createdAt: { $gte: yesterdayStart, $lt: todayStart } },
-            },
-            { $project: { _id: 0, word: 1, added: "$createdAt" } },
-          ],
-          Anteriores: [
-            { $match: { createdAt: { $lt: yesterdayStart } } },
-            { $project: { _id: 0, word: 1, added: "$createdAt" } },
-          ],
-        },
-      },
-    ]);
-
-    // Extrai o resultado da agregação facetada
-    const result = historyGrouped[0] || { Hoje: [], Ontem: [], Anteriores: [] };
+    const history = await History.find({ userId })
+      .sort({ createdAt: -1 }) // Aproveita o índice composto { userId: 1, createdAt: -1 }
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .select("word createdAt -_id");
 
     return res.status(200).json({
-      results: {
-        today: result.Hoje,
-        yesterday: result.Ontem,
-        older: result.Anteriores,
-      },
+      results: history.map((h) => ({ word: h.word, added: h.createdAt })),
+      totalDocs,
+      page,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
     });
   } catch (error) {
     console.error(`❌ Erro ao buscar histórico do usuário: ${error.message}`);
@@ -96,16 +77,22 @@ const getMyHistory = async (req, res) => {
 };
 
 /**
- * ⭐ 3. Listagem geral de todas as palavras favoritadas pelo usuário
+ * ⭐ 3. Lista de palavras favoritadas (paginada, mais recentes primeiro)
  * Endpoint: GET /user/me/favorites
  */
 const getMyFavorites = async (req, res) => {
   const userId = req.userId;
 
   try {
-    // Busca todos os favoritos ordenando pelos mais recentes adicionados
+    const { page, limit } = parsePagination(req.query);
+
+    const totalDocs = await Favorite.countDocuments({ userId });
+    const totalPages = Math.ceil(totalDocs / limit) || 0;
+
     const favorites = await Favorite.find({ userId })
       .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
       .select("word createdAt -_id");
 
     return res.status(200).json({
@@ -113,6 +100,11 @@ const getMyFavorites = async (req, res) => {
         word: fav.word,
         added: fav.createdAt,
       })),
+      totalDocs,
+      page,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
     });
   } catch (error) {
     console.error(`❌ Erro ao buscar favoritos do usuário: ${error.message}`);
