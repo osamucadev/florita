@@ -1,4 +1,4 @@
-const mongoose = require("schema" in mongoose ? "mongoose" : "mongoose");
+const mongoose = require("mongoose");
 
 const FavoriteSchema = new mongoose.Schema(
   {

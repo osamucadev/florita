@@ -3,6 +3,7 @@ const router = express.Router();
 
 const authRoutes = require("./auth.routes");
 const dictionaryRoutes = require("./dictionary.routes");
+const userRoutes = require("./user.routes");
 
 /**
  * @openapi
@@ -35,10 +36,8 @@ router.get("/status", (req, res) => {
     .json({ status: "OK", message: "Florita API operacional" });
 });
 
-// Acopla as rotas de autenticação (Abertas) -> Ex: /auth/signup
 router.use("/auth", authRoutes);
-
-// Acopla as rotas gerais da aplicação -> Usamos '/' para herdar o caminho fixo direto nos arquivos
 router.use("/", dictionaryRoutes);
+router.use("/user/me", userRoutes);
 
 module.exports = router;
