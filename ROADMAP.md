@@ -115,6 +115,6 @@ Este documento apresenta o mapeamento completo e o checklist de engenharia para 
   - [x] Iniciais do usuário exibidas no avatar do header.
 - [ ] **Edição de Perfil**
   - [ ] Fluxo de edição do nome na tela de perfil.
-- [ ] **Testes Unitários (Diferencial Backend)**
-  - [ ] Testes para os controllers validando status codes `200`, `204` e `400`.
-  - [ ] Testes para as funções de codificação/decodificação do cursor em Base64.
+- [x] **Testes Unitários (Diferencial Backend)**
+  - [x] Testes para os controllers validando status codes `200`, `204` e `400`.
+  - [x] Testes para as funções de codificação/decodificação do cursor em Base64.
