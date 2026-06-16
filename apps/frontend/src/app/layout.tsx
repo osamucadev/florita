@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import { AuthHydrator } from "@/components/AuthHydrator";
+import { Footer } from "@/components/Footer";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -36,7 +37,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[#F6F4FC] font-sans text-[#1F0A3D] selection:bg-[#5E00FA]/20">
-        <AuthHydrator>{children}</AuthHydrator>
+        <AuthHydrator>
+          <div className="flex flex-col min-h-screen">
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
+        </AuthHydrator>
       </body>
     </html>
   );
