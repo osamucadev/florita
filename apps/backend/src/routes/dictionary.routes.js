@@ -2,9 +2,16 @@ const express = require("express");
 const router = express.Router();
 const Dictionary = require("../models/Dictionary");
 
-// 🔒 TODAS AS ROTAS ABAIXO SÃO PRIVADAS
-// TODO: Aplicar o middleware de autenticação JWT globalmente neste arquivo de rotas
+// Importamos o middleware de autenticação que acabamos de criar
+const authMiddleware = require("../middlewares/auth.middleware");
 
+// 🔒 Protege globalmente todas as rotas deste arquivo
+router.use(authMiddleware);
+
+/**
+ * 📖 GET /entries/en
+ * Listagem das palavras com paginação por cursor (Agora protegida!)
+ */
 router.get("/", async (req, res) => {
   try {
     const { search, limit = 20, cursor } = req.query;

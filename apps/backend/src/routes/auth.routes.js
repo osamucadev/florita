@@ -1,18 +1,13 @@
 const express = require("express");
 const router = express.Router();
 
-router.post("/signup", (req, res) => {
-  // TODO: Criar criptografia de senha e gravação no banco de dados
-  return res
-    .status(501)
-    .json({ message: "Funcionalidade de cadastro em construção." });
-});
+// Importamos as funções do nosso controller
+const authController = require("../controllers/authController");
 
-router.post("/signin", (req, res) => {
-  // TODO: Validar senha criptografada e gerar token JWT para o usuário
-  return res
-    .status(501)
-    .json({ message: "Funcionalidade de login em construção." });
-});
+// Vincula a rota pública de cadastro ao método do controller
+router.post("/signup", authController.signup);
+
+// Vincula a rota de login (em construção)
+router.post("/signin", authController.signin);
 
 module.exports = router;
