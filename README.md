@@ -2,6 +2,14 @@
 
 > Um ecossistema de busca de alta performance, proxy e gerenciamento de dicionário de inglês, imerso na identidade e nos conceitos de energia renovável da **Flora**.
 
+## 🌐 Deploy
+
+| Serviço | URL |
+|---|---|
+| Frontend | https://florita-ruddy.vercel.app |
+| API | https://florita-production.up.railway.app |
+| Documentação Swagger | https://florita-production.up.railway.app/api-docs |
+
 ## 💡 O Porquê do Nome
 
 O nome **Florita** nasce da fusão entre a marca **Flora** e o sufixo latino *-ita*, frequentemente utilizado na mineralogia para batizar cristais e elementos naturais da terra (como a *Fluorita*).
