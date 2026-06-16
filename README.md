@@ -1,8 +1,11 @@
 # 🌸 Florita
-
 > Um ecossistema de busca de alta performance, proxy e gerenciamento de dicionário de inglês, imerso na identidade e nos conceitos de energia renovável da **Flora**.
 
 ![Florita](https://i.imgur.com/Nw1NVcn.png)
+
+<p align="center">
+  <img src="./lighthouse.png" alt="Lighthouse Score" />
+</p>
 
 ## 🌐 Deploy
 
