@@ -2,6 +2,8 @@
 
 > Um ecossistema de busca de alta performance, proxy e gerenciamento de dicionário de inglês, imerso na identidade e nos conceitos de energia renovável da **Flora**.
 
+![Florita](https://i.imgur.com/Nw1NVcn.png)
+
 ## 🌐 Deploy
 
 | Serviço | URL |
@@ -23,7 +25,7 @@ O ecossistema foi projetado como um **Monorepo** utilizando as tecnologias mais 
 - **Back-end:** Node.js + Express (controle granular de headers, cache e proxy)
 - **Banco de Dados NoSQL:** MongoDB + Mongoose (persistência orientada a documentos)
 - **Camada de Cache:** Redis (latência próxima a zero para requisições repetidas, com headers `x-cache` e `x-response-time`)
-- **Front-end:** Next.js 16 + React 19 + TypeScript + Tailwind CSS v4 + Zustand + Framer Motion
+- **Front-end:** Next.js 15 + React 19 + TypeScript + Tailwind CSS v4 + Zustand + Framer Motion
 - **Containerização:** Docker + Docker Compose (ambiente 100% portável e isolado)
 - **Documentação:** OpenAPI 3.0 via Swagger UI em `/api-docs`
 
