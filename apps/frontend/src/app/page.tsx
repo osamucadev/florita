@@ -174,8 +174,8 @@ function LoginForm() {
             </Link>
           </p>
 
-          <div className="mt-16 flex justify-between items-center text-[10px] font-sans uppercase tracking-widest text-[#BFB3DA] border-t border-[#E5DEF5] pt-4">
-            <span className="font-bold text-[#56FF65]">Flora Energia</span>
+          <div className="mt-16 flex justify-between items-center text-[10px] font-sans uppercase tracking-widest text-[#625678] border-t border-[#E5DEF5] pt-4">
+            <span className="font-bold text-[#5E00FA]">Flora Energia</span>
             <span>FLR-2026 v1.0</span>
           </div>
         </div>
