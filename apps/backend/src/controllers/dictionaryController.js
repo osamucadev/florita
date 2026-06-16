@@ -85,7 +85,10 @@ const getEntries = async (req, res) => {
       : {};
 
     // Executa a busca no MongoDB
-    let words = await Dictionary.find(query).sort(sortOrder).limit(parsedLimit);
+    let words = await Dictionary.find(query)
+      .collation({ locale: "en", strength: 2 })
+      .sort(sortOrder)
+      .limit(parsedLimit);
 
     // Se usamos o cursor previous, os resultados vêm invertidos; reordenamos
     if (previous) {
@@ -106,7 +109,9 @@ const getEntries = async (req, res) => {
           $gt: lastWord,
           ...(term ? { $lt: term + "\uffff" } : {}),
         },
-      }).sort({ word: 1 });
+      })
+        .collation({ locale: "en", strength: 2 })
+        .sort({ word: 1 });
       hasNext = !!nextCheck;
     }
 
@@ -216,12 +221,15 @@ const getWordDetails = async (req, res) => {
       }
     }
 
-    // Salva de forma isolada no Histórico NoSQL (falha aqui não impede a resposta)
+    // Registra no histórico apenas na primeira visualização (upsert sem update)
     try {
-      await History.create({
-        userId,
-        word: normalizedWord,
-      });
+      await History.updateOne(
+        { userId, word: normalizedWord },
+        {
+          $setOnInsert: { userId, word: normalizedWord, createdAt: new Date() },
+        },
+        { upsert: true },
+      );
     } catch (historyError) {
       console.error(
         `⚠️ Falha não impeditiva ao gravar log de histórico: ${historyError.message}`,

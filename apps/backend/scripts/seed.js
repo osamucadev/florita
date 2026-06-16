@@ -45,7 +45,7 @@ async function runSeed() {
       const trimmedWord = line.trim().toLowerCase();
 
       // Validação básica: ignora linhas vazias ou caracteres estranhos
-      if (trimmedWord && /^[a-zA-Z-]+$/.test(trimmedWord)) {
+      if (trimmedWord && /^[a-zA-Z]+(-[a-zA-Z]+)*$/.test(trimmedWord)) {
         currentBatch.push({
           insertOne: {
             document: { word: trimmedWord },

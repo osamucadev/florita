@@ -39,6 +39,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const data = await res.json();
 
   if (!res.ok) {
+    // Token expirado ou inválido: limpa o storage e redireciona com motivo
+    if (res.status === 401 && typeof window !== "undefined") {
+      localStorage.removeItem("florita_token");
+      localStorage.removeItem("florita_user");
+      window.location.href = "/?reason=expired";
+      return undefined as T;
+    }
     // Lança o objeto de erro para o chamador tratar com extractErrorMessage
     throw data;
   }

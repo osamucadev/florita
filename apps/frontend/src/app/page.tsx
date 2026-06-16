@@ -1,16 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { authApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { extractErrorMessage } from "@/types/api";
 
-export default function LoginPage() {
+const REASON_MESSAGES: Record<string, string> = {
+  inactivity: "Sua sessão expirou por inatividade. Faça login novamente.",
+  expired: "Sua sessão foi encerrada. Faça login novamente.",
+};
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const login = useAuthStore((state) => state.login);
+
+  const reason = searchParams.get("reason");
+  const sessionMessage = reason ? (REASON_MESSAGES[reason] ?? null) : null;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -79,6 +88,20 @@ export default function LoginPage() {
               Entre com suas credenciais para continuar.
             </p>
           </div>
+
+          {/* Aviso de sessão expirada */}
+          <AnimatePresence>
+            {sessionMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="mb-6 text-xs font-sans text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-4 py-3 leading-relaxed"
+              >
+                {sessionMessage}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <form className="space-y-6" onSubmit={handleSubmit} noValidate>
             <div className="border-b border-[#D2C7EB] pb-2 focus-within:border-[#5E00FA] transition-colors duration-300">
@@ -158,5 +181,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }
