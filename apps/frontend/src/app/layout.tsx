@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
+import { AuthHydrator } from "@/components/AuthHydrator";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,9 +13,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+});
+
 export const metadata: Metadata = {
-  title: "Florita App",
-  description: "Gerenciamento inteligente e rotinas eficientes.",
+  title: "Florita - A linguagem da energia limpa",
+  description:
+    "Ecossistema inteligente de tradução e termos técnicos da Flora Energia.",
 };
 
 export default function RootLayout({
@@ -25,10 +33,10 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased light`}
+      className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-50 font-sans text-zinc-900 selection:bg-teal-500/20">
-        {children}
+      <body className="min-h-full flex flex-col bg-[#F6F4FC] font-sans text-[#1F0A3D] selection:bg-[#5E00FA]/20">
+        <AuthHydrator>{children}</AuthHydrator>
       </body>
     </html>
   );
