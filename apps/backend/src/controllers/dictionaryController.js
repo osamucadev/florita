@@ -1,6 +1,7 @@
 const axios = require("axios");
 const Dictionary = require("../models/Dictionary");
 const History = require("../models/History");
+const Favorite = require("../models/Favorite");
 const { redisClient } = require("../config/redis");
 
 /**
@@ -238,7 +239,91 @@ const getWordDetails = async (req, res) => {
   }
 };
 
+/**
+ * ⭐ 3. Favoritar uma palavra
+ * Endpoint: POST /entries/en/:word/favorite
+ */
+const favoriteWord = async (req, res) => {
+  const { word } = req.params;
+  const userId = req.userId; // Injetado pelo authMiddleware
+
+  if (!word) {
+    return res
+      .status(400)
+      .json({ message: "O parâmetro palavra é obrigatório." });
+  }
+
+  const normalizedWord = word.trim().toLowerCase();
+
+  try {
+    // Usamos um try/catch focado na inserção para capturar o erro de duplicidade do índice composto único
+    try {
+      await Favorite.create({
+        userId,
+        word: normalizedWord,
+      });
+    } catch (dbError) {
+      // Código 11000 significa que o índice único barrou (o usuário já tinha favoritado)
+      if (dbError.code === 11000) {
+        return res
+          .status(400)
+          .json({ message: "Esta palavra já está na sua lista de favoritos." });
+      }
+      throw dbError;
+    }
+
+    // O edital exige retorno 204 (No Content) para operações de escrita/sucesso que não retornam corpo
+    return res.status(204).send();
+  } catch (error) {
+    console.error(`❌ Erro ao favoritar palavra: ${error.message}`);
+    return res
+      .status(400)
+      .json({ message: "Erro ao processar a ação de favoritar." });
+  }
+};
+
+/**
+ * 🗑️ 4. Desfavoritar uma palavra
+ * Endpoint: DELETE /entries/en/:word/unfavorite
+ */
+const unfavoriteWord = async (req, res) => {
+  const { word } = req.params;
+  const userId = req.userId;
+
+  if (!word) {
+    return res
+      .status(400)
+      .json({ message: "O parâmetro palavra é obrigatório." });
+  }
+
+  const normalizedWord = word.trim().toLowerCase();
+
+  try {
+    const result = await Favorite.deleteOne({
+      userId,
+      word: normalizedWord,
+    });
+
+    // Se nenhum documento foi deletado, significa que a palavra não estava favoritada
+    if (result.deletedCount === 0) {
+      return res.status(404).json({
+        message: "Esta palavra não foi encontrada na sua lista de favoritos.",
+      });
+    }
+
+    // Retorno 204 (No Content) conforme as restrições estritas do edital
+    return res.status(204).send();
+  } catch (error) {
+    console.error(`❌ Erro ao desfavoritar palavra: ${error.message}`);
+    return res
+      .status(400)
+      .json({ message: "Erro ao processar a ação de desfavoritar." });
+  }
+};
+
 module.exports = {
   getEntries,
   getWordDetails,
+  favoriteWord,
+  unfavoriteWord,
 };

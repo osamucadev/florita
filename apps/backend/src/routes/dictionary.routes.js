@@ -119,4 +119,77 @@ router.get("/entries/en", dictionaryController.getEntries);
  */
 router.get("/entries/en/:word", dictionaryController.getWordDetails);
 
+/**
+ * @openapi
+ * /entries/en/{word}/favorite:
+ *   post:
+ *     summary: Adiciona uma palavra à lista de favoritos do usuário
+ *     description: Salva o termo na coleção de favoritos associada ao usuário autenticado. Possui trava atômica no banco contra duplicidade.
+ *     tags:
+ *       - Dicionário
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: word
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: A palavra em inglês que deseja favoritar.
+ *     responses:
+ *       204:
+ *         description: Palavra favoritada com sucesso. Sem corpo de retorno.
+ *       400:
+ *         description: Palavra já favoritada ou erro de requisição.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Esta palavra já está na sua lista de favoritos."
+ *       401:
+ *         description: Token ausente ou inválido.
+ */
+router.post("/entries/en/:word/favorite", dictionaryController.favoriteWord);
+
+/**
+ * @openapi
+ * /entries/en/{word}/unfavorite:
+ *   delete:
+ *     summary: Remove uma palavra da lista de favoritos do usuário
+ *     description: Remove o vínculo do termo da coleção NoSQL de favoritos do usuário autenticado.
+ *     tags:
+ *       - Dicionário
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: word
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: A palavra em inglês que deseja remover dos favoritos.
+ *     responses:
+ *       204:
+ *         description: Palavra removida dos favoritos com sucesso. Sem corpo de retorno.
+ *       404:
+ *         description: Palavra não encontrada na lista de favoritos daquele usuário.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Esta palavra não foi encontrada na sua lista de favoritos."
+ *       401:
+ *         description: Token ausente ou inválido.
+ */
+router.delete(
+  "/entries/en/:word/unfavorite",
+  dictionaryController.unfavoriteWord,
+);
+
 module.exports = router;
