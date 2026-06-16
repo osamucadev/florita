@@ -41,6 +41,9 @@ services:
     depends_on:
       - mongodb
       - redis
+    volumes:
+      - ./apps/backend:/app
+      - /app/node_modules
 
   # Frontend (Next.js 15)
   frontend:
@@ -55,6 +58,10 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:3333
     depends_on:
       - backend
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+      - /app/.next
 
 volumes:
   mongo_data:

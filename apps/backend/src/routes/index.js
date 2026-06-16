@@ -8,7 +8,7 @@ const dictionaryRoutes = require("./dictionary.routes");
 router.get("/status", (req, res) => {
   return res
     .status(200)
-    .json({ status: "OK", message: "Florita API operacional." });
+    .json({ status: "OK", message: "Florita API operacional" });
 });
 
 // 🔑 Acopla as rotas de autenticação (Abertas) -> Ex: /auth/signup
